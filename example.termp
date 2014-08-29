@@ -1,0 +1,24 @@
+SAY This is a demonstartion of `term-present`
+SAY It can run simple scripts in a human processable way.
+
+BREATH
+SAY like running `ls -l`
+RUN ls -l
+
+BREATH
+SAY or changing directories
+RUN cd ..
+RUN ls
+
+BREATH
+SAY It can even take contol of VIM.
+RUN cd ~
+
+RUN vim README.md
+- BREATH
+- TYPE iHello world!\n\e
+- BREATH
+- TYPE :w\n:x\n
+
+BREATH
+RUN doest-not-exist
