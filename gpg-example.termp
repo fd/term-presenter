@@ -1,0 +1,46 @@
+SAY Use gpg to encrypt files
+SAY First, let's make a directory to work in
+
+RUN mkdir new
+RUN cd new
+RUN pwd
+
+BREATH
+
+SAY Now, let's make a new file with some text
+RUN touch new.txt
+RUN echo 'add this text like this' >> new.txt
+RUN cat new.txt
+
+BREATH
+
+SAY Now, let's encrypt
+RUN gpg -c new.txt
+- TYPE Some Password\n
+- TYPE Some Password\n
+SAY I just entered a passcode
+
+BREATH
+
+SAY Now let's see what we did
+RUN ls
+
+SAY Don't forget to get rid of the original file using a secure removal
+RUN rm new.txt
+
+SAY Now, let's have a look at that gpg file
+RUN cat new.txt.gpg | hexdump -C
+SAY Looks pretty encrypted
+
+BREATH
+
+SAY Now let's decrypt the file again
+RUN gpg -d new.txt.gpg
+- TYPE Some Password\n
+SAY Nice! It works.
+
+BREATH
+
+RUN cd ..
+RUN rm -r new
+SAY Have a nice day!
