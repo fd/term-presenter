@@ -11,14 +11,17 @@ RUN cd ..
 RUN ls
 
 BREATH
-SAY It can even take contol of VIM.
+SAY It can even take control of VIM.
 RUN cd ~
 
 RUN vim README.md
+- TYPE GVggd
 - BREATH
 - TYPE iHello world!\n\e
 - BREATH
 - TYPE :w\n:x\n
+RUN cat README.md
+RUN rm README.md
 
 BREATH
 RUN doest-not-exist
