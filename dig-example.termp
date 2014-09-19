@@ -1,0 +1,19 @@
+SAY Let's lookup some DNS records.
+RUN dig google.com
+
+SAY Hmmm...
+SAY That looks confusing. We can do better:
+RUN dig google.com +noall +answer
+SAY Ok, now we can see just the answers.
+
+BREATH
+SAY The first column is the full domain name (or FQDN).
+SAY The second is how long (in seconds) the answer remains valid.
+SAY You can ignore the third column (for now).
+SAY The fourth column is the type of record.
+SAY And the fifth column is the value of the record.
+
+BREATH
+SAY Now lets figure out where this information comes from.
+RUN dig google.com +noall +answer +trace
+

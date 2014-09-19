@@ -2,16 +2,17 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"github.com/dapplebeforedawn/pty"
-	"github.com/vaughan0/go-ini"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
-	"os/exec"
 	"time"
+
+	"github.com/dapplebeforedawn/pty"
+	"github.com/vaughan0/go-ini"
 )
 
 type Recorder struct {
@@ -209,12 +210,18 @@ func (r *Recorder) Upload() error {
 }
 
 func compress(p []byte) ([]byte, error) {
-	var buf bytes.Buffer
+	var (
+		buf bytes.Buffer
+		w   = gzip.NewWriter(&buf)
+		err error
+	)
 
-	cmd := exec.Command("bzip2", "-zc4")
-	cmd.Stdin = bytes.NewReader(p)
-	cmd.Stdout = &buf
-	err := cmd.Run()
+	_, err = w.Write(p)
+	if err != nil {
+		return nil, err
+	}
+
+	err = w.Close()
 	if err != nil {
 		return nil, err
 	}
