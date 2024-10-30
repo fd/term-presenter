@@ -1,0 +1,9 @@
+/result
+/result-*
+/data
+/data-*
+/tunnel-test
+/.direnv
+/.devenv
+/.data
+/target

@@ -11,39 +11,36 @@ import (
 	"unicode/utf8"
 	"unsafe"
 
-	"github.com/dapplebeforedawn/pty"
+	"github.com/creack/pty"
 )
 
 func Exec(w io.Writer, op Op) {
-	cmd := exec.Command("bash")
+	cmd := exec.Command("bash", "--noprofile", "--norc")
 	cmd.Env = append(os.Environ(), []string{
 		"PS1=\x1B@$?.",
 		"PS2=",
 		"PS3=",
 		"PS4=",
+		"PROMPT_COMMAND=",
 	}...)
 
-	f, err := pty.Start(cmd)
+	rows, cols, err := pty.Getsize(os.Stdin)
+	if err != nil {
+		op := OpOops{err.Error()}
+		op.Exec(w, nil, nil)
+		return
+	}
+
+	f, err := pty.StartWithSize(cmd, &pty.Winsize{
+		Rows: uint16(rows),
+		Cols: uint16(cols),
+	})
 	if err != nil {
 		op := OpOops{err.Error()}
 		op.Exec(w, nil, nil)
 		return
 	}
 	defer f.Write([]byte{4})
-
-	{
-		r, c, err := pty.Getsize(os.Stdin)
-		if err != nil {
-			r, c = 80, 120
-		}
-
-		err = pty.Setsize(f, uint16(r), uint16(c))
-		if err != nil {
-			op := OpOops{err.Error()}
-			op.Exec(w, nil, nil)
-			return
-		}
-	}
 
 	ptyState, err := newPtyState(f)
 	if err != nil {
@@ -56,15 +53,17 @@ func Exec(w io.Writer, op Op) {
 	go io.Copy(f, os.Stdin)
 
 	var cp = BashCopy{ptyState: ptyState, r: f, o: os.Stdin}
-	cp.WriteTo(w)
+	err = cp.WriteTo(w)
+	if err != nil {
+		op := OpOops{err.Error()}
+		op.Exec(w, f, ptyState)
+	}
 
 	err = op.Exec(w, f, ptyState)
 	if err != nil {
 		op := OpOops{err.Error()}
 		op.Exec(w, f, ptyState)
 	}
-
-	// fmt.Printf("ptybuf=%q\n", ptybuf.String())
 }
 
 type Op interface {
@@ -264,27 +263,8 @@ func newPtyState(pty *os.File) (*PtyState, error) {
 	return &PtyState{pty, oldState}, nil
 }
 
-func (p *PtyState) NoEcho() error {
-	p.pty.Sync()
-
-	newState := p.oldState
-	newState.Lflag &^= syscall.ECHO
-	newState.Lflag |= syscall.ICANON | syscall.ISIG
-	newState.Iflag |= syscall.ICRNL
-
-	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL,
-		p.pty.Fd(),
-		ioctlWriteTermios,
-		uintptr(unsafe.Pointer(&newState)),
-		0, 0, 0); err != 0 {
-		return err
-	}
-
-	return p.pty.Sync()
-}
-
 func (p *PtyState) CopyTo(f *os.File) error {
-	var state syscall.Termios
+	var state = new(syscall.Termios)
 
 	p.pty.Sync()
 	f.Sync()
@@ -292,7 +272,7 @@ func (p *PtyState) CopyTo(f *os.File) error {
 	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL,
 		p.pty.Fd(),
 		ioctlReadTermios,
-		uintptr(unsafe.Pointer(&state)),
+		uintptr(unsafe.Pointer(state)),
 		0, 0, 0); err != 0 {
 		return err
 	}
@@ -300,7 +280,7 @@ func (p *PtyState) CopyTo(f *os.File) error {
 	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL,
 		f.Fd(),
 		ioctlWriteTermios,
-		uintptr(unsafe.Pointer(&state)),
+		uintptr(unsafe.Pointer(state)),
 		0, 0, 0); err != 0 {
 		return err
 	}
@@ -342,7 +322,10 @@ func (b *BashCopy) WriteTo(w io.Writer) error {
 	)
 
 	for {
-		b.ptyState.CopyTo(b.o)
+		err := b.ptyState.CopyTo(b.o)
+		if err != nil {
+			panic("oops")
+		}
 
 		switch state {
 
@@ -387,7 +370,7 @@ func (b *BashCopy) WriteTo(w io.Writer) error {
 				b.code = code
 				state = 3
 			} else {
-				panic("error while readin exit status")
+				panic("error while reading exit status")
 			}
 
 		case 3:
@@ -395,6 +378,4 @@ func (b *BashCopy) WriteTo(w io.Writer) error {
 
 		}
 	}
-
-	panic("unreachable")
 }

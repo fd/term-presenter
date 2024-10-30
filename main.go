@@ -22,7 +22,7 @@ Options:
 
 func main() {
 	var (
-		args, _   = docopt.Parse(usage, nil, true, "1.0", false)
+		args, _   = docopt.ParseDoc(usage)
 		src, _    = args["<src>"].(string)
 		upload, _ = args["--upload"].(bool)
 	)
@@ -33,17 +33,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	rec := NewRecorder(os.Stdout)
-	rec.Meta.Populate()
-
-	Exec(rec, script)
-
-	rec.Flush()
 	if upload {
+		rec := NewRecorder(os.Stdout)
+		rec.Meta.Populate()
+
+		Exec(rec, script)
+
+		rec.Flush()
+
 		err := rec.Upload()
 		if err != nil {
 			fmt.Printf("error: %s\n", err)
 			os.Exit(1)
 		}
+	} else {
+		Exec(os.Stdout, script)
 	}
 }

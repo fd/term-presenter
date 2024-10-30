@@ -11,7 +11,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/dapplebeforedawn/pty"
+	"github.com/creack/pty"
 	"github.com/vaughan0/go-ini"
 )
 
@@ -48,7 +48,7 @@ func (m *Meta) Populate() {
 	m.Shell = "/bin/bash"
 	m.Term.Type = os.Getenv("TERM")
 
-	r, c, err := pty.Getsize(os.Stdout)
+	r, c, err := pty.Getsize(os.Stdin)
 	if err == nil {
 		m.Term.Lines = r
 		m.Term.Columns = c

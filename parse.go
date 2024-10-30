@@ -2,12 +2,12 @@ package main
 
 import (
 	"errors"
-	"io/ioutil"
+	"os"
 	"strings"
 )
 
 func ParseFile(name string) (Script, error) {
-	data, err := ioutil.ReadFile(name)
+	data, err := os.ReadFile(name)
 	if err != nil {
 		return nil, err
 	}
